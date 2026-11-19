@@ -1,0 +1,140 @@
+# =============================================================================
+# NetHelper site profile - EXAMPLE
+#
+# A profile tells NetHelper what "normal" looks like at one site, so checks can
+# say "wrong VLAN" or "file server unreachable" instead of just reporting
+# numbers. Copy this file, edit it for the site, and use it with:
+#
+#     nethelper full --profile acme-hq.toml
+#
+# or save it as the default profile (used when --profile isn't given):
+#     Windows:      %LOCALAPPDATA%\NetHelper\profile.toml
+#     Linux/macOS:  ~/.local/share/nethelper/profile.toml
+#
+# Every section and key is OPTIONAL - delete whatever you don't need; built-in
+# defaults are used for anything missing. Lines starting with # are comments.
+# All hosts/ports/networks are validated when the profile loads; a typo is
+# reported with the section and key name.
+# =============================================================================
+
+[site]
+name = "Acme HQ"                       # shown in reports
+
+# --- Servers and services that matter here --------------------------------
+# Each [[targets]] block is one server. "host" is pinged and its "ports" must
+# accept TCP connections; "url" is fetched over HTTP(S) with TLS checks.
+[[targets]]
+name = "File server"
+host = "fs01.acme.local"
+ports = [445]                          # SMB
+
+[[targets]]
+name = "RDP gateway"
+host = "rdgw.acme.com"
+ports = [443, 3389]
+
+[[targets]]
+name = "Line-of-business app"
+url = "https://erp.acme.com/login"
+
+# Mail / directory services: the greeting banner is read to prove the right
+# service is answering. kind = smtp | submission | smtps | imap | imaps | pop3 |
+# ldap | ldaps | kerberos | tcp   (port is optional; the standard one is used)
+[[services]]
+name = "Domain controller LDAP"
+host = "dc01.acme.local"
+kind = "ldap"
+
+[[services]]
+name = "Outbound mail relay"
+host = "smtp.acme.com"
+kind = "submission"
+
+# --- Internet reference points --------------------------------------------
+[internet]
+ping = ["1.1.1.1", "8.8.8.8"]          # public IPs for latency/loss tests
+hostname = "www.cloudflare.com"        # name used by the connectivity ladder
+trace_target = "1.1.1.1"               # traceroute and MTU target
+
+# --- DNS ------------------------------------------------------------------
+[dns]
+names = ["www.microsoft.com", "fs01.acme.local"]   # resolved via OS, local and public DNS
+domains = ["acme.com"]                 # full record lookup (MX/SPF/DMARC/NS...)
+extra_resolvers = []                   # additional DNS servers to compare
+# public_resolvers = { Cloudflare = "1.1.1.1", Google = "8.8.8.8", Quad9 = "9.9.9.9" }
+
+[http]
+urls = ["https://www.microsoft.com/", "https://outlook.office365.com/"]
+
+[ntp]
+servers = ["time.windows.com", "pool.ntp.org"]
+
+# --- Third-party lookups ----------------------------------------------------
+# Public IP lookup and speed test contact outside services. Set
+# external_lookups = false (or use --offline) to disable both.
+[public]
+external_lookups = true
+ip_lookup_url = "https://ipinfo.io/json"
+
+[bandwidth]
+download_bytes = 10000000              # 10 MB down
+upload_bytes = 2000000                 # 2 MB up
+# iperf_server = "iperf.acme.local"    # needs the iperf3 tool installed
+# iperf_seconds = 5
+# throughput_target = "gateway"        # LAN throughput check in full runs: a host
+#                                      # running 'nethelper serve' (or iperf3), or "gateway"
+
+# --- What this site SHOULD look like ----------------------------------------
+# Mismatches FAIL the relevant check. Leave out anything you don't know.
+[expected]
+vlan = 20                              # access/native VLAN of desk ports (from LLDP/CDP)
+voice_vlan = 30                        # voice VLAN advertised to phones
+subnet = "10.0.20.0/24"
+gateway = "10.0.20.1"
+# gateway_mac = "00:11:22:33:44:55"    # pin it to detect ARP spoofing / router swaps
+dns_servers = ["10.0.0.10", "10.0.0.11"]
+dhcp_servers = ["10.0.0.10"]           # any other DHCP server = rogue
+# switch_name = "core-sw-01"
+# switch_port = "Gi1/0/12"
+min_link_mbps = 1000                   # warn when a desk links at 100 Mb/s
+
+# --- VLAN plan ---------------------------------------------------------------
+# Used to (a) work out which VLAN this machine's IP belongs to, (b) validate
+# the subnet for the VLAN the switch reports, and (c) test inter-VLAN routing
+# by pinging each VLAN's gateway and targets.
+[vlans.20]
+name = "Data"
+subnet = "10.0.20.0/24"
+gateway = "10.0.20.1"
+
+[vlans.30]
+name = "Voice"
+subnet = "10.0.30.0/24"
+gateway = "10.0.30.1"
+
+[vlans.40]
+name = "Servers"
+subnet = "10.0.40.0/24"
+gateway = "10.0.40.1"
+targets = ["10.0.40.10"]               # e.g. a server that desks must reach
+
+# --- Warning thresholds ------------------------------------------------------
+[thresholds]
+latency_warn_ms = 100
+loss_warn_pct = 2
+jitter_warn_ms = 30
+dns_slow_ms = 300
+cert_warn_days = 21
+wifi_warn_dbm = -70
+wifi_warn_pct = 40
+clock_warn_s = 2
+mtu_warn = 1400
+
+# --- Continuous monitor ------------------------------------------------------
+[monitor]
+interval = 5                           # seconds between rounds
+targets = ["fs01.acme.local"]          # extra hosts to watch
+
+# --- Switchport discovery ----------------------------------------------------
+[switchport]
+wait = 35                              # LLDP repeats every 30 s; use 65 for CDP-only switches

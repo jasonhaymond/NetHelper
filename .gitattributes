@@ -1,0 +1,8 @@
+# Line-ending rules: normalise text files to LF in the repository so diffs are
+# clean across Windows/Linux/macOS; PowerShell scripts keep CRLF on checkout
+# for Windows PowerShell 5.1 compatibility.
+* text=auto
+*.py text eol=lf
+*.toml text eol=lf
+*.md text eol=lf
+*.ps1 text eol=crlf

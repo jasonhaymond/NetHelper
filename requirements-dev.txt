@@ -1,0 +1,12 @@
+# Development / security-suite tools for NetHelper (NOT needed to run it -
+# NetHelper itself uses only the Python standard library).
+# Install into the project venv:
+#   python -m venv .venv
+#   .venv\Scripts\pip install -r requirements-dev.txt      (Windows)
+#   .venv/bin/pip install -r requirements-dev.txt          (Linux/macOS)
+# Versions pinned to the latest stable release as of 2026-11-18; bump at each
+# release after checking `pip list --outdated` (see scripts/security-check.ps1).
+pytest==9.2.0
+bandit==1.9.4
+pip-audit==2.10.1
+ruff==0.17.5

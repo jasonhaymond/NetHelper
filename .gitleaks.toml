@@ -1,0 +1,18 @@
+# gitleaks configuration for NetHelper (secret scanner used by scripts/security-check.ps1).
+# Starts from gitleaks' full default rule set and adds two narrow exceptions.
+[extend]
+useDefault = true
+
+# Third-party packages, Python caches and build output: not NetHelper's code,
+# all gitignored, so they can never be committed. (.venv alone held 200 hits in
+# vendored libraries' test data.)
+[[allowlists]]
+description = "gitignored third-party/cache/build folders"
+paths = ['''(^|[\\/])\.venv[\\/]''', '''(^|[\\/])__pycache__[\\/]''', '''(^|[\\/])dist[\\/]''']
+
+# Captured Windows 'netsh wlan show interfaces' output in the parser tests:
+# "Authentication : WPA2-Enterprise" is a Wi-Fi security type, not a key.
+[[allowlists]]
+description = "netsh Wi-Fi 'Authentication : WPA...' fixture lines"
+regexTarget = "line"
+regexes = ['''^\s*Authentication\s+:\s+WPA[0-9A-Za-z-]*\s*$''']

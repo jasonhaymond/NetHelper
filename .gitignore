@@ -1,0 +1,26 @@
+# Files Git should never track for NetHelper.
+
+# Python bytecode caches and tool caches (regenerated automatically)
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Local virtual environment with dev tools (recreate from requirements-dev.txt)
+.venv/
+
+# Build output (scripts/build.py) - binaries/archives are never committed
+dist/
+build/
+*.egg-info/
+
+# Security reports describe unfixed weaknesses - never commit them
+security-reports/
+
+# Packet captures and generated reports can contain other people's traffic,
+# IP addresses and network details
+*.pcap
+*.pcapng
+*.etl
+*-report.html
+*.zip
