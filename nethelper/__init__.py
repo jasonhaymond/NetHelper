@@ -12,7 +12,7 @@ Python 3.11 or newer without installing anything else.
 
 # Semantic version: MAJOR.MINOR.PATCH. Bump this together with CHANGELOG.md and
 # pyproject.toml in the same commit that ships the change.
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 # Name shown in banners, reports and the HTTP User-Agent header.
 APP_NAME = "NetHelper"

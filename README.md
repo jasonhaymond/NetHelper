@@ -5,7 +5,7 @@ machine's network from the adapter up to the application, works out where
 things break, and says what to do in plain English. It runs on Windows, Linux
 and macOS, as a standard user or elevated.
 
-**Current version: 1.0.0** (first release, 2026-11-19). See [CHANGELOG.md](CHANGELOG.md).
+**Current version: 1.0.1** (2026-11-19). Download `nethelper.pyz` from [GitHub Releases](https://github.com/jasonhaymond/NetHelper/releases). See [CHANGELOG.md](CHANGELOG.md).
 
 ## Documentation
 

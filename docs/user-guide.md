@@ -47,11 +47,25 @@ only Python's standard library.
    ```
    Expected: `Python 3.11.x` or higher.
 2. Get NetHelper in **one** of these ways:
-   - **Portable single file.** Copy `nethelper.pyz` (built with `python scripts/build.py`), then run `python nethelper.pyz --version`.
+   - **Portable single file.** Download `nethelper.pyz` from the [GitHub Releases page](https://github.com/jasonhaymond/NetHelper/releases), or build it yourself with `python scripts/build.py`. Then run `python nethelper.pyz --version`.
    - **From the source folder.** Run `python -m nethelper --version`.
    - **As a command.** Run `pip install .` in the source folder, then `nethelper --version`.
 
-   Expected output: `NetHelper 1.0.0`.
+   Expected output: `NetHelper 1.0.1`.
+3. (Optional, for the downloaded `.pyz`.) Check that the download is intact and matches the published source. Each release has a `nethelper.pyz.sha256` file next to the download.
+
+   Compare the hashes:
+   ```bash
+   (Get-FileHash nethelper.pyz -Algorithm SHA256).Hash     # Windows PowerShell: compare with the file's hash
+   sha256sum -c nethelper.pyz.sha256                       # Linux/macOS: prints "nethelper.pyz: OK"
+   ```
+
+   The build is repeatable, so you can go further and rebuild from the release tag. The same source always gives a byte-identical file, on any OS and any Python 3.11+, so the hash must match the published one:
+   ```bash
+   git clone https://github.com/jasonhaymond/NetHelper && cd NetHelper
+   git checkout vX.Y.Z
+   python scripts/build.py                # then hash dist/nethelper.pyz as above
+   ```
 
 Below, `nethelper` stands for whichever form you used.
 
@@ -75,7 +89,7 @@ Run `nethelper caps` to see what was detected.
 Run `nethelper` with no arguments to open the menu:
 
 ```
-NetHelper 1.0.0 - network troubleshooting
+NetHelper 1.0.1 - network troubleshooting
    1) Quick health check
    2) Full diagnostic (a few minutes)
    3) Test a host, website or port

@@ -103,7 +103,7 @@ adds `privilege_note` to its details, and the runner then marks it `limited`.
 ```powershell
 python -m venv .venv
 .venv\Scripts\pip install -r requirements-dev.txt
-.venv\Scripts\python -m pytest                     # Windows - expect 193 passed
+.venv\Scripts\python -m pytest                     # Windows - expect 197 passed
 wsl -e bash -lc "cd '/mnt/c/.../NetHelper' && PYTHONPATH=.venv/Lib/site-packages python3 -m pytest -q -p no:cacheprovider"
 ```
 
@@ -118,6 +118,7 @@ wsl -e bash -lc "cd '/mnt/c/.../NetHelper' && PYTHONPATH=.venv/Lib/site-packages
 | `test_framework.py` | Runner gating, crash/timeout containment, verdict, baselines, CLI basics |
 | `test_settings_logs_help.py` | `.env` parsing/precedence/validation/backup/masking, `.env.example` in sync, keeping the last N run logs, secret masking in logs, every command has examples that parse, every menu item parses, menu input validation, `config` CLI, exit code 4 on unexpected errors |
 | `test_throughput_wifi_dest.py` | Throughput up/down/parallel/UDP; key auth; server limits (oversized handshake, length, mode, rate); ICMP fallback; Wi-Fi parsers, channel analysis and evil twins; every destination type parsed; rejections (passwords in URL, insecure transports, path/host injection); local copy never overwrites; WebDAV and HTTPS uploads against a local server; SFTP batch mode without a shell; smbclient keeps the password off the command line; `dest`/`upload` CLI; source-address binding |
+| `test_build.py` | The `.pyz` build is byte-for-byte repeatable (file times don't matter); fixed entry metadata (date, Unix mode, no compression, sorted, no bytecode); LF line endings; the `.pyz` passes exit codes to the OS (0 for `--version`, 3 for a usage error) |
 | `test_dest_s3_email_syslog.py` | S3/mailto/syslog parsing and rejections (several recipients, mailto `?bcc=`, bad bucket, credentials in URL, key-prefix traversal, unencrypted syslog, option-like host); new settings validated (header injection in the sender address); SigV4 against AWS's published example signature; S3 path-style PUT with payload hash against a fake server, S3 error hints, refusal of an http endpoint, addressing styles; email: one message, attachments, a hostile diagnosis title can't add a Bcc header, size limit, plain SMTP needs the insecure opt-in, STARTTLS enforced; automatic log uploads don't email; syslog event mapping, RFC 5424 escaping, newline (log-injection) flattening, JSON format, UDP datagrams and TCP octet-counted framing; new secrets masked; uploads never follow a redirect (the bearer token is not sent to the redirect target); URL-encoded trailing newlines rejected |
 
 **Manual verification before a release:**
@@ -155,7 +156,56 @@ These need your explicit approval:
 3. Run `pwsh scripts/security-check.ps1`, show the report, and get approval.
 4. Commit, then re-run the suite against the commit.
 5. Tag: `git tag -a vX.Y.Z -m "... Security review: approved <date>, report <file>, accepted risks: <n|none>"`.
-6. Build with `python scripts/build.py` and distribute `dist/nethelper.pyz`. Never commit it.
+6. Push the commit and the tag:
+
+   ```bash
+   git push origin main
+   git push origin vX.Y.Z
+   ```
+
+7. Publish the GitHub Release. **Every release gets one**, with `nethelper.pyz` and `nethelper.pyz.sha256` attached. A tag without the download is an incomplete release.
+
+   ```powershell
+   pwsh scripts/release.ps1 -DryRun   # build + verify only; shows the files and release notes
+   pwsh scripts/release.ps1           # publish
+   ```
+
+   The script needs PowerShell 7.3+, git, Python 3.11+ and the GitHub CLI signed in (`gh auth login`). It:
+
+   - refuses unless `vX.Y.Z` is an annotated tag containing `Security review: approved` and has been pushed to origin
+   - builds the `.pyz` from a temporary checkout of that exact tag, never from your working folder
+   - checks that the built file reports `NetHelper X.Y.Z`
+   - writes the checksum
+   - creates the release with download instructions and the version's `CHANGELOG.md` section
+
+   It refuses an existing release unless you pass `-Replace` (re-upload the files). Expected end of a real run:
+
+   ```text
+     build OK: NetHelper X.Y.Z
+     sha256: <64 hex characters>
+
+   Published: https://github.com/jasonhaymond/NetHelper/releases/tag/vX.Y.Z
+   ```
+
+8. Check the published download:
+
+   ```bash
+   gh release download vX.Y.Z -D /tmp/nh-check
+   cd /tmp/nh-check && sha256sum -c nethelper.pyz.sha256 && python3 -I nethelper.pyz --version
+   ```
+
+   Expected: `nethelper.pyz: OK` and `NetHelper X.Y.Z`.
+
+For a local-only build (testing, a one-off copy), run `python scripts/build.py`. The output goes to `dist/nethelper.pyz`. `dist/` is gitignored; never commit the `.pyz`.
+
+**The build is repeatable.** The same commit gives a byte-identical `.pyz` on Windows, Linux and macOS, with any Python 3.11+, so anyone can rebuild a tag and match the published SHA-256. `scripts/build.py` achieves this by fixing every machine-dependent detail:
+
+- fixed entry dates and sorted entry order
+- Unix mode 0644 on every entry
+- LF line endings
+- no compression, because Windows and Linux Pythons ship different zlib libraries that compress differently
+
+Its header comment has the details, and `tests/test_build.py` guards them. Don't switch to `zipapp.create_archive` or turn compression on without keeping that property.
 
 ## 9. Known limitations and untested paths
 
